@@ -35,7 +35,6 @@ abstract class FilesystemTest extends TestCase
             $this->assertEquals(Warning::class, get_class($e));
             $this->assertEquals("chdir(): No such file or directory (errno 2)", $e->getMessage());
         }
-
     }
 
     public function testChmod()
@@ -57,6 +56,7 @@ abstract class FilesystemTest extends TestCase
         $this->assertEquals('hello', $this->filesystem->file_get_contents($this->base . '/demo/dir1/file1'));
         $this->assertEquals('hello', $this->filesystem->file_get_contents($this->base . '/demo/dir2/file2'));
     }
+
     public function testFileExists()
     {
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir', 0755, true));
@@ -66,7 +66,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertFalse($this->filesystem->file_exists($this->base . '/demo/dir/file2'));
         $this->assertFalse($this->filesystem->file_exists($this->base . '/demo/dir2'));
     }
-
 
     public function testFileGetContents()
     {
@@ -107,7 +106,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertEquals($this->base . '/demo/dir', (string) $this->filesystem->getcwd());
     }
 
-
     public function testIsDir()
     {
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir', 0755, true));
@@ -121,7 +119,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertFalse($this->filesystem->is_dir($this->base . '/demo/dir3')); // not set up
     }
 
-
     public function testIsFile()
     {
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir', 0755, true));
@@ -134,7 +131,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertTrue($this->filesystem->is_file($this->base . '/demo/dir/file2')); // link to file
         $this->assertFalse($this->filesystem->is_file($this->base . '/demo/dir3')); // not set up
     }
-
 
     public function testIsLink()
     {
@@ -179,7 +175,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertTrue($this->filesystem->unlink($this->base . '/demo/dir2'));
         $this->assertTrue($this->filesystem->rmdir($this->base . '/demo/dir'));
     }
-
 
 
     public function testIsWritable()
@@ -285,10 +280,6 @@ abstract class FilesystemTest extends TestCase
 
     }
 
-
-    /**
-     * for some reason, rmdir seems to throw warnings!
-     */
     public function testRmDir()
     {
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir1/dir2/dir3', 0777, true));
@@ -315,7 +306,6 @@ abstract class FilesystemTest extends TestCase
             $this->assertEquals(Warning::class, get_class($e));
             $this->assertEquals("rmdir({$this->base}/demo/dir2): No such file or directory", $e->getMessage());
         }
-
     }
 
     public function testScanDir()
@@ -330,7 +320,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertEquals(['.', '..', 'dir2', 'file1', 'file2'], $this->filesystem->scandir($this->base . '/demo/dir1'));
         $this->assertEquals(['file2', 'file1', 'dir2', '..', '.'], $this->filesystem->scandir($this->base . '/demo/dir1', SCANDIR_SORT_DESCENDING));
     }
-
 
     public function testSymlink()
     {
@@ -358,7 +347,6 @@ abstract class FilesystemTest extends TestCase
             $this->assertEquals("symlink(): File exists", $e->getMessage());
         }
     }
-
 
     public function testTouch()
     {
