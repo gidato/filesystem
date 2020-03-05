@@ -1,0 +1,24 @@
+{
+    "name": "gidato/filesystem",
+    "description": "Class access to filesystem functions, to aid simulation during testing",
+    "keywords": [
+        "gidato",
+        "filesystem"
+    ],
+    "license": "MIT",
+    "require": {
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gidato\\Filesystem\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
