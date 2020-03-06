@@ -106,6 +106,114 @@ abstract class FilesystemTest extends TestCase
         $this->assertEquals($this->base . '/demo/dir', (string) $this->filesystem->getcwd());
     }
 
+    public function testGlob()
+    {
+        $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir', 0755, true));
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/file1.txt'));
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir/file1.txt'));
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir/file2.txt'));
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir/file3.txt'));
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir/file3a.txt'));
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir/file3\\.txt'));
+        $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir2', 0333, true)); // not readable, but writable
+        $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir2/file.txt'));
+
+        try {
+            $globbed = $this->filesystem->glob($this->base . '/demo/*');
+            $this->assertCount(3, $globbed);
+            $this->assertEquals($this->base . '/demo/dir', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir2', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/file1.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*', GLOB_ONLYDIR);
+            $this->assertCount(2, $globbed);
+            $this->assertEquals($this->base . '/demo/dir', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir2', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/file[13]*');
+            $this->assertCount(4, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file1.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3\\.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3a.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/file{1,2}*');
+            $this->assertCount(0, $globbed);
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/file{1,2}*', GLOB_BRACE);
+            $this->assertCount(2, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file1.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file2.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/file[1-3]*');
+            $this->assertCount(5, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file1.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file2.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3\\.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3a.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/file[!13]*');
+            $this->assertCount(1, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file2.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/dir/file?.txt');
+            $this->assertCount(3, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file1.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file2.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/dir/file*.txt');
+            $this->assertCount(5, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file1.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file2.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3\\.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3a.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*', GLOB_MARK);
+            $this->assertCount(3, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir2/', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/file1.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/x*');
+            $this->assertEquals([], $globbed);
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/x*', GLOB_NOCHECK);
+            $this->assertCount(1, $globbed);
+            $this->assertEquals($this->base . '/demo/x*', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/*\*', );
+            $this->assertEquals([], $globbed);
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/*\*', GLOB_NOESCAPE);
+            $this->assertCount(1, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file3\\.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/*');
+            $this->assertCount(5, $globbed);
+            $this->assertEquals($this->base . '/demo/dir/file1.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file2.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3\\.txt', array_shift($globbed));
+            $this->assertEquals($this->base . '/demo/dir/file3a.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob($this->base . '/demo/*/*', GLOB_ERR); // file not readable
+            $this->assertFalse($globbed);
+
+        } catch (\Throwable $e) {
+            $this->assertTrue($this->filesystem->unlink($this->base . '/demo/dir2/file.txt'));
+            $this->assertTrue($this->filesystem->rmdir($this->base . '/demo/dir2'));
+            throw $e;
+        }
+
+        // tidy up
+        $this->assertTrue($this->filesystem->unlink($this->base . '/demo/dir2/file.txt'));
+        $this->assertTrue($this->filesystem->rmdir($this->base . '/demo/dir2'));
+
+    }
+
     public function testIsDir()
     {
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir', 0755, true));

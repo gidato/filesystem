@@ -195,7 +195,188 @@ class Memory implements Filesystem
 
     public function glob(string $pattern, int $flags = 0) // array or false
     {
-        return glob($pattern, $flags);
+        $patternParts = explode('/', trim($pattern, '/'));
+        $matches =  $this->findMatches($patternParts, $this->structure, $flags);
+        if (false === $matches) {
+            return false;
+        }
+
+        if (($flags & GLOB_NOSORT) == 0) {
+            sort($matches);
+        }
+
+        if ($flags & GLOB_ONLYDIR) {
+            $matches = array_filter($matches, function ($match) {
+                return $this->is_dir($match);
+            });
+        }
+
+        if ($flags & GLOB_MARK) {
+            $matches = array_map(function ($match) {
+                return $match . ($this->is_dir($match) ? '/' : '');
+            }, $matches);
+        }
+
+        if (empty($matches) && ($flags & GLOB_NOCHECK)) {
+            $matches[] = $pattern;
+        }
+
+        return $matches;
+    }
+
+    private function findMatches(array $patterns, Node $node, int $flags) // array or false
+    {
+        if ($node->isDir() && !$node->isReadable() && ($flags & GLOB_ERR)) {
+            return false;
+        }
+
+        if ($node->isDir() && $node->isReadable()) {
+            $children = $node->getChildren();
+        } else {
+            $children = [];
+        }
+
+        $regex = $this->preparePattern(array_shift($patterns), $flags);
+        $matches = [];
+        foreach ($children as $child) {
+            if (preg_match($regex, $child->getName())) {
+                if (empty($patterns)) {
+                    $matches[] = $child->getPath();
+                } else {
+                    $remaining = $this->findMatches($patterns, $child, $flags);
+                    if (false === $remaining) {
+                        return false;
+                    }
+
+                    $matches = array_merge($matches, $remaining);
+                }
+            }
+        }
+
+        return $matches;
+    }
+
+    private function preparePattern(string $pattern, int $flags) : string
+    {
+        return '/^' . implode('', $this->tokenizePattern($pattern, $flags)) . '$/';
+    }
+
+    private function tokenizePattern(string $pattern, int $flags) : array
+    {
+        if (empty($pattern)) {
+            return [];
+        }
+
+        if ('[!' == substr($pattern, 0, 2)) {
+            // only allowed as a char if matching closing
+            $remaining = $this->tokenizePattern(substr($pattern, 2), $flags);
+            if (false !== $key = array_search(']', $remaining)) {
+                return array_merge(
+                    ['[^'.implode('', array_slice($remaining, 0, $key)).']'],
+                    array_slice($remaining, $key + 1)
+                );
+            } else {
+                return array_merge(['\\[\\^'], $remaining);
+            }
+        }
+
+        if ('[' == substr($pattern, 0, 1)) {
+            // only allowed as a char if matching closing
+            $remaining = $this->tokenizePattern(substr($pattern, 1), $flags);
+            if (false !== $key = array_search(']', $remaining)) {
+                return array_merge(
+                    ['['.implode('', array_slice($remaining, 0, $key)).']'],
+                    array_slice($remaining, $key + 1)
+                );
+            } else {
+                return array_merge(['\\['], $remaining);
+            }
+        }
+
+        if (']' == substr($pattern, 0, 1)) {
+            return array_merge([']'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('?' == substr($pattern, 0, 1)) {
+            return array_merge(['.'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('*' == substr($pattern, 0, 1)) {
+            return array_merge(['.*'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('\\' == substr($pattern, 0, 1) && ($flags & GLOB_NOESCAPE) == 0) {
+            return array_merge([substr($pattern, 0, 2)], $this->tokenizePattern(substr($pattern, 2), $flags));
+        }
+
+        if ('\\' == substr($pattern, 0, 1)) {
+            return array_merge(['\\\\'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('(' == substr($pattern, 0, 1)) {
+            return array_merge(['\\('], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('.' == substr($pattern, 0, 1)) {
+            return array_merge(['\\.'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('^' == substr($pattern, 0, 1)) {
+            return array_merge(['\\^'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('$' == substr($pattern, 0, 1)) {
+            return array_merge(['\\$'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('{' == substr($pattern, 0, 1) && ($flags & GLOB_BRACE)) {
+            $remaining = $this->tokenizePattern(substr($pattern, 1), $flags);
+            if (false !== $key = array_search('}', $remaining)) {
+                return array_merge(
+                    ['(' .  $this->getChoices(array_slice($remaining, 0, $key), $flags) . ')'],
+                    array_slice($remaining, $key+1)
+                );
+            } else {
+                return array_merge(['\\{'], $remaining);
+            }
+        }
+
+        if ('{' == substr($pattern, 0, 1)) {
+            return array_merge(['\\{'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        if ('}' == substr($pattern, 0, 1)) {
+            return array_merge(['}'], $this->tokenizePattern(substr($pattern, 1), $flags));
+        }
+
+        $remaining = $this->tokenizePattern(substr($pattern, 1), $flags);
+        if (in_array(substr($remaining[0] ?? 'x', 0, 1), ['(', '\\', '.', ']', '[', '}'])) {
+            array_unshift($remaining, substr($pattern, 0, 1));
+        } else {
+            $remaining[0] = substr($pattern, 0, 1) . ($remaining[0] ?? '');
+        }
+        return $remaining;
+    }
+
+    private function getChoices(array $patterns, int $flags) : string
+    {
+        $choices = [];
+        $current = '';
+        foreach ($patterns as $pattern) {
+            if ('\\' == substr($pattern, 0, 1) && ($flags & GLOB_NOESCAPE) == 0) {
+                $current .= $pattern;
+                continue;
+            }
+
+            while (false !== $pos = strpos($pattern, ',')) {
+                $choices[] = $current . substr($pattern, 0, $pos);
+                $current = '';
+                $pattern = substr($pattern, $pos+1);
+            }
+            $choices[] = $pattern;
+        }
+
+        return implode('|', $choices);
     }
 
     public function is_dir(string $filename) : bool

@@ -53,6 +53,11 @@ class Dir extends Node
         return $nextLevelNode->get($pathFromNode);
     }
 
+    public function getChildren() : array
+    {
+        return $this->children;
+    }
+
     public function setNode(Node $node) : void
     {
         $this->children[$node->getName()] = $node;

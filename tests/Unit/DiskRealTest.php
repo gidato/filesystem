@@ -116,6 +116,21 @@ class DiskRealTest extends TestCase
         $this->assertEquals(["a\n","b\n","c"], $this->filesystem->file($file));
     }
 
+    public function testGlob()
+    {
+        file_put_contents($this->testDir . DIRECTORY_SEPARATOR . 'file.txt', 'content');
+        file_put_contents($this->testDir . DIRECTORY_SEPARATOR . 'file2.txt', 'content');
+
+        $globbed = $this->filesystem->glob($this->testDir . DIRECTORY_SEPARATOR . '*');
+        $this->assertCount(2, $globbed);
+        $this->assertEquals($this->testDir . DIRECTORY_SEPARATOR . 'file.txt', $globbed[0]);
+        $this->assertEquals($this->testDir . DIRECTORY_SEPARATOR . 'file2.txt', $globbed[1]);
+
+        $globbed = $this->filesystem->glob($this->testDir . DIRECTORY_SEPARATOR . '*2*');
+        $this->assertCount(1, $globbed);
+        $this->assertEquals($this->testDir . DIRECTORY_SEPARATOR . 'file2.txt', $globbed[0]);
+    }
+
     public function testFileperms()
     {
         $filename = $this->testDir . DIRECTORY_SEPARATOR . 'testfile.txt';
