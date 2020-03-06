@@ -195,6 +195,12 @@ class Memory implements Filesystem
 
     public function glob(string $pattern, int $flags = 0) // array or false
     {
+        $relativePattern =  ('/' != substr($pattern, 0, 1));
+        if ($relativePattern) {
+            $current = $this->getcwd() . '/';
+            $pattern = $current . $pattern;
+        }
+
         $patternParts = explode('/', trim($pattern, '/'));
         $matches =  $this->findMatches($patternParts, $this->structure, $flags);
         if (false === $matches) {
@@ -219,6 +225,15 @@ class Memory implements Filesystem
 
         if (empty($matches) && ($flags & GLOB_NOCHECK)) {
             $matches[] = $pattern;
+        }
+
+        if ($relativePattern) {
+            $matches = array_map(function ($match) use ($current) {
+                if (substr($match, 0, strlen($current)) != $current) {
+                    throw new \RuntimeException('Current working Directory not at start of path, and relative requested');
+                }
+                return substr($match, strlen($current));
+            }, $matches);
         }
 
         return $matches;

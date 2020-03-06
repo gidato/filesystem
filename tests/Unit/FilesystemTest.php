@@ -117,6 +117,7 @@ abstract class FilesystemTest extends TestCase
         $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir/file3\\.txt'));
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir2', 0333, true)); // not readable, but writable
         $this->assertTrue($this->filesystem->touch($this->base . '/demo/dir2/file.txt'));
+        $this->assertTrue($this->filesystem->chdir($this->base . '/demo'));
 
         try {
             $globbed = $this->filesystem->glob($this->base . '/demo/*');
@@ -124,6 +125,12 @@ abstract class FilesystemTest extends TestCase
             $this->assertEquals($this->base . '/demo/dir', array_shift($globbed));
             $this->assertEquals($this->base . '/demo/dir2', array_shift($globbed));
             $this->assertEquals($this->base . '/demo/file1.txt', array_shift($globbed));
+
+            $globbed = $this->filesystem->glob('*');
+            $this->assertCount(3, $globbed);
+            $this->assertEquals('dir', array_shift($globbed));
+            $this->assertEquals('dir2', array_shift($globbed));
+            $this->assertEquals('file1.txt', array_shift($globbed));
 
             $globbed = $this->filesystem->glob($this->base . '/demo/*', GLOB_ONLYDIR);
             $this->assertCount(2, $globbed);
