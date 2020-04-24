@@ -116,6 +116,33 @@ class DiskRealTest extends TestCase
         $this->assertEquals(["a\n","b\n","c"], $this->filesystem->file($file));
     }
 
+    public function testFileperms()
+    {
+        $filename = $this->testDir . DIRECTORY_SEPARATOR . 'testfile.txt';
+        touch($filename);
+
+        chmod($filename, 0755);
+        $this->assertEquals(0755, 0777 & $this->filesystem->fileperms($filename));
+
+        chmod($filename, 0700);
+        clearstatcache();
+        $this->assertEquals(0700, 0777 & $this->filesystem->fileperms($filename));
+    }
+
+    public function testFilesize()
+    {
+        $file = $this->testDir . DIRECTORY_SEPARATOR . 'file.txt';
+        file_put_contents($file, 'sample');
+
+        $this->assertEquals(6, $this->filesystem->filesize($file));
+    }
+
+    public function testGetcwd()
+    {
+        chdir($this->testDir);
+        $this->assertEquals($this->testDir, $this->filesystem->getcwd());
+    }
+
     public function testGlob()
     {
         file_put_contents($this->testDir . DIRECTORY_SEPARATOR . 'file.txt', 'content');
@@ -131,24 +158,6 @@ class DiskRealTest extends TestCase
         $this->assertEquals($this->testDir . DIRECTORY_SEPARATOR . 'file2.txt', $globbed[0]);
     }
 
-    public function testFileperms()
-    {
-        $filename = $this->testDir . DIRECTORY_SEPARATOR . 'testfile.txt';
-        touch($filename);
-
-        chmod($filename, 0755);
-        $this->assertEquals(0755, 0777 & $this->filesystem->fileperms($filename));
-
-        chmod($filename, 0700);
-        clearstatcache();
-        $this->assertEquals(0700, 0777 & $this->filesystem->fileperms($filename));
-    }
-
-    public function testGetcwd()
-    {
-        chdir($this->testDir);
-        $this->assertEquals($this->testDir, $this->filesystem->getcwd());
-    }
 
     public function testIsDir()
     {
@@ -303,6 +312,4 @@ class DiskRealTest extends TestCase
         $this->assertFalse(file_exists($link));
         $this->assertFalse(file_exists($file));
     }
-
-
 }

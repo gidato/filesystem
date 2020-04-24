@@ -82,7 +82,6 @@ abstract class FilesystemTest extends TestCase
         $this->assertEquals('hello world', $this->filesystem->file_get_contents($this->base . '/demo/dir/file'));
     }
 
-
     public function testFile()
     {
         $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir', 0755, true));
@@ -95,6 +94,14 @@ abstract class FilesystemTest extends TestCase
         $this->assertEquals(["\n","\n","Line 3\n", "Line 4\n", "\n", "Line 6"], $this->filesystem->file($this->base . '/demo/dir/file', FILE_SKIP_EMPTY_LINES));
         $this->assertEquals(["", "", "Line 3", "Line 4", "", "Line 6"], $this->filesystem->file($this->base . '/demo/dir/file', FILE_IGNORE_NEW_LINES));
         $this->assertEquals(["Line 3", "Line 4", "Line 6"], $this->filesystem->file($this->base . '/demo/dir/file', FILE_SKIP_EMPTY_LINES | FILE_IGNORE_NEW_LINES));
+    }
+
+    public function testFilesize()
+    {
+        $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir1', 0755, true));
+        $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir2', 0755, true));
+        $this->assertTrue($this->filesystem->file_put_contents($this->base . '/demo/dir1/file1','hello') !== false);
+        $this->assertEquals(5, $this->filesystem->filesize($this->base . '/demo/dir1/file1'));
     }
 
     public function testGetcwd()
@@ -535,5 +542,4 @@ abstract class FilesystemTest extends TestCase
             $this->assertEquals("unlink({$this->base}/demo/dir): Operation not permitted", $e->getMessage());
         }
     }
-
 }

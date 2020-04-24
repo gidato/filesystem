@@ -12,6 +12,7 @@ interface Filesystem
     public function file_put_contents(string $filename, $data, int $flags = 0 ); // int or false
     public function file(string $filename, int $flags = 0 ); // array or false
     public function fileperms(string $filename) : ?int;
+    public function filesize(string $filename); // int or false;
     public function getcwd() : string;
     public function glob(string $pattern, int $flags = 0); // array or false
     public function is_dir(string $filename) : bool;

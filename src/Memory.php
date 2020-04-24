@@ -188,6 +188,16 @@ class Memory implements Filesystem
         return $file->getMode()->toInt();
     }
 
+    public function filesize(string $filename) // int or false;
+    {
+        $file = $this->get($filename);
+        if (null === $file) {
+            return false;
+        }
+
+        return strlen($file->getContents());
+    }
+
     public function getcwd() : string
     {
         return (string) $this->structure->getWorkingDirectory();

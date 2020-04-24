@@ -45,6 +45,11 @@ class Disk implements Filesystem
         return fileperms($filename);
     }
 
+    public function filesize(string $filename) // int or false;
+    {
+        return filesize($filename);
+    }
+
     public function getcwd() : string
     {
         return getcwd();
@@ -115,7 +120,7 @@ class Disk implements Filesystem
         if (null === $mask) {
             return umask();
         }
-        
+
         return umask($mask);
     }
 
