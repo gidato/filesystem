@@ -523,7 +523,10 @@ class Memory implements Filesystem
             $newDir->setNode(new File($newDir, $newName, $from->getContents(), 0666 ^ $this->mask));
             return $this->unlink($oldname);
         } else {
-            $newDir->setNode(new Directory($newDir, $newName, $from->getContents(), 0666 ^ $this->mask));
+            $this->mkdir($newname);
+            foreach (array_diff($this->scandir($oldname), ['.','..']) as $node) {
+                $this->rename($oldname . '/' . $node, $newname . '/' . $node);
+            }
             return $this->rmdir($oldname);
         }
     }
