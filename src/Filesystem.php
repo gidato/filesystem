@@ -22,6 +22,7 @@ interface Filesystem
     public function is_writable(string $filename) : bool;
     public function mkdir(string $pathname, int $mode = 0777, bool $recursive = FALSE) : bool;
     public function readlink(string $path); // string or false
+    public function rename(string $oldname, string $newname) : bool;
     public function rmdir(string $directory) : bool;
     public function scandir(string $directory, int $sorting_order = SCANDIR_SORT_ASCENDING); // array or false
     public function symlink(string $target, string $link) : bool;

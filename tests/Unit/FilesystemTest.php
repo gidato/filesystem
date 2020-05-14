@@ -225,7 +225,6 @@ abstract class FilesystemTest extends TestCase
         // tidy up
         $this->assertTrue($this->filesystem->unlink($this->base . '/demo/dir2/file.txt'));
         $this->assertTrue($this->filesystem->rmdir($this->base . '/demo/dir2'));
-
     }
 
     public function testIsDir()
@@ -400,6 +399,16 @@ abstract class FilesystemTest extends TestCase
             $this->assertEquals("readlink(): Invalid argument", $e->getMessage());
         }
 
+    }
+
+    public function testRenameFileToFile()
+    {
+        $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir1', 0755, true));
+        $this->assertTrue($this->filesystem->mkdir($this->base . '/demo/dir2', 0755, true));
+        $this->assertTrue($this->filesystem->file_put_contents($this->base . '/demo/dir1/file1','hello') !== false);
+        $this->assertTrue($this->filesystem->rename($this->base . '/demo/dir1/file1',$this->base . '/demo/dir2/file2'));
+        $this->assertFalse($this->filesystem->file_exists($this->base . '/demo/dir1/file1'));
+        $this->assertEquals('hello', $this->filesystem->file_get_contents($this->base . '/demo/dir2/file2'));
     }
 
     public function testRmDir()

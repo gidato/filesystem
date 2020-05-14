@@ -491,6 +491,43 @@ class Memory implements Filesystem
         return (string) $node->getTarget();
     }
 
+    public function rename(string $oldname, string $newname) : bool
+    {
+        $from = $this->get($oldname);
+        [$newDirPath, $newName] = $this->getDirectoryAndNameFromPath($newname);
+        $newDir = $this->get($newDirPath);
+        $to = $this->get($newname);
+
+        if (null == $from) {
+            return $this->error("Source {$oldname} not found");
+        }
+
+        if (null == $newDir) {
+            return $this->error("Destination directory {$newDir} does not exist");
+        }
+
+        if (null !== $to) {
+            return $this->error("Destination {$newname} exists");
+        }
+
+        if (!$from->isReadable()) {
+            return $this->error("Source  {$oldname} is not readable");
+        }
+
+        if (!$newDir->isWritable()) {
+            return $this->error("Destination  {$newname} is not writable");
+        }
+
+        // copy
+        if ($from->isFile()) {
+            $newDir->setNode(new File($newDir, $newName, $from->getContents(), 0666 ^ $this->mask));
+            return $this->unlink($oldname);
+        } else {
+            $newDir->setNode(new Directory($newDir, $newName, $from->getContents(), 0666 ^ $this->mask));
+            return $this->rmdir($oldname);
+        }
+    }
+
     public function rmdir(string $path) : bool
     {
         $directory = $this->get($path);

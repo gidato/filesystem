@@ -95,6 +95,11 @@ class Disk implements Filesystem
         return readlink($path);
     }
 
+    public function rename(string $oldname, string $newname) : bool
+    {
+        return rename($oldname, $newname);
+    }
+
     public function rmdir(string $directoryname) : bool
     {
         return rmdir($directoryname);
